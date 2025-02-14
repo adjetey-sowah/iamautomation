@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "LambdaS3Bucket",
+    "ParameterValue": "amalitech-bucket"
+  },
+  {
+    "ParameterKey": "LambdaS3Key",
+    "ParameterValue": "target/iam-user-event-lambda-1.0-SNAPSHOT.jar"
+  },
+  {
+    "ParameterKey": "EC2UserEmail",
+    "ParameterValue": "ec2-julius@example.com"
+  },
+  {
+    "ParameterKey": "S3UserEmail",
+    "ParameterValue": "s3-julius@example.com"
+  },
+  {
+    "ParameterKey": "TemporaryPassword",
+    "ParameterValue": "SomeSecurePassword123!"
+  }
+]
