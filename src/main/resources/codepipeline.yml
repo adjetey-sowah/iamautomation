@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "CodePipeline for CloudFormation Git Sync"
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Description: "iamautomation repo"
+
+  GitHubBranch:
+    Type: String
+    Default: "main"
+    Description: "Branch to sync (default: main)"
+
+  GitHubToken:
+    Type: String
+    NoEcho: true
+    Description: "GitHub Personal Access Token"
+
+  CFNStackName:
+    Type: String
+    Default: "CloudFormationStack"
+    Description: "Name of the CloudFormation stack"
+
+  CFNTemplateFile:
+    Type: String
+    Default: "iam-resources.yml"
+    Description: "CloudFormation template file in GitHub repository"
+
+  CFNParametersFile:
+    Type: String
+    Default: "parameters.json"
+    Description: "CloudFormation parameters file in GitHub repository"
+
+Resources:
+  # Create an S3 bucket to store the CloudFormation artifacts
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "cfn-artifacts-${AWS::AccountId}-${AWS::Region}"
+
+  # CodePipeline IAM Role
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CodePipelineExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: CodePipelinePermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource: !Sub "arn:aws:s3:::cfn-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+              - Effect: Allow
+                Action:
+                  - "cloudformation:*"
+                Resource: "*"
+
+  # AWS CodePipeline
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: CloudFormationGitSync
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: !Select [0, !Split ["/", !Ref GitHubRepo]]
+                Repo: !Select [1, !Split ["/", !Ref GitHubRepo]]
+                Branch: !Ref GitHubBranch
+                OAuthToken: !Ref GitHubToken
+              OutputArtifacts:
+                - Name: SourceOutput
+
+        - Name: Deploy
+          Actions:
+            - Name: DeployCloudFormation
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: !Ref CFNStackName
+                TemplatePath: SourceOutput::!Ref CFNTemplateFile
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub |-
+                  [
+                    {"ParameterKey": "LambdaS3Bucket", "ParameterValue": "amalitech-bucket"},
+                    {"ParameterKey": "LambdaS3Key", "ParameterValue": "iam-user-event-lambda-1.0-SNAPSHOT.jar"},
+                    {"ParameterKey": "EC2UserEmail", "ParameterValue": "ec2-user-julius@example.com"},
+                    {"ParameterKey": "S3UserEmail", "ParameterValue": "s3-user-julius@example.com"},
+                    {"ParameterKey": "TemporaryPassword", "ParameterValue": "SomeSecurePassword123!"}
+                  ]
+              InputArtifacts:
+                - Name: SourceOutput
+
+Outputs:
+  PipelineUrl:
+    Value: !Sub "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/CloudFormationGitSync/view"
+    Description: "URL to view CodePipeline"
