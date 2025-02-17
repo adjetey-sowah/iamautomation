@@ -1,0 +1,8 @@
+template-file-path: iam-resources.yml
+parameters:
+  S3UserEmail: s3-julius@gmail.com
+  LambdaS3Key: iam-user-event-lambda-1.0-SNAPSHOT.jar
+  LambdaS3Bucket: amalitech-bucket
+  EC2UserEmail: julius@gmail.com
+  TemporaryPassword: '****'
+tags: {}
