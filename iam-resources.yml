@@ -168,6 +168,12 @@ Resources:
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStacks
                 Resource: !Ref OneTimePasswordSecret
 
   # 7. Lambda Function (Java) triggered by EventBridge
