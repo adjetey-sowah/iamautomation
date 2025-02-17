@@ -1,0 +1,6 @@
+Parameters:
+  LambdaS3Bucket: "amalitech-bucket"
+  LambdaS3Key: "iam-user-event-lambda-1.0-SNAPSHOT.jar"
+  EC2UserEmail: "julius-ec2@gmail.com"
+  S3UserEmail: "s3-juliust@gmail.com"
+  TemporaryPassword: "SomeSecurePassword123!"
